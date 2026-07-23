@@ -39,7 +39,29 @@
 		return event.key === 'Escape' || event.code === 'Escape';
 	}
 
+	function isActivatable(target: EventTarget | null): boolean {
+		if (!(target instanceof Element)) return false;
+		return Boolean(target.closest('button, a, [role="button"]'));
+	}
+
 	function onKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+			if (setupMode) {
+				if (selectedKeys.length === 0) return;
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				startKeysFromSelection();
+				return;
+			}
+			if (session.phase === 'done') {
+				if (isActivatable(event.target)) return;
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				void again();
+				return;
+			}
+		}
+
 		if (setupMode || session.phase !== 'active') return;
 
 		if (isReplayKey(event)) {
@@ -229,7 +251,7 @@
 	{#if setupMode}
 		<section class="setup" aria-labelledby="setup-title">
 			<h1 id="setup-title">Choose keys</h1>
-			<p class="setup-lede">Select the characters to train, then start. Hear a key, type it.</p>
+			<p class="setup-lede">Select the characters to train, then press Enter or Start. Hear a key, type it.</p>
 			<KeyPicker bind:selected={selectedKeys} onStart={startKeysFromSelection} />
 		</section>
 	{:else if session.phase === 'done' && session.summary}
@@ -288,6 +310,7 @@
 				<a class="ghost linkish" href={resolve('/results')}>Results</a>
 				<button type="button" class="ghost" onclick={home}>Home</button>
 			</div>
+			<p class="again-hint">Enter to practice again</p>
 		</section>
 	{:else}
 		<section
@@ -622,6 +645,13 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.75rem;
+	}
+
+	.again-hint {
+		margin: 0.85rem 0 0;
+		font-size: 0.85rem;
+		color: var(--ink-soft);
+		opacity: 0.9;
 	}
 
 	.primary,

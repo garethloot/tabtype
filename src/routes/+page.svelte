@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import AppNav from '$lib/components/AppNav.svelte';
+	import ShortcutHints from '$lib/components/ShortcutHints.svelte';
 	import {
 		formatSessionDate,
 		listSessions,
@@ -68,7 +69,27 @@
 	function langLabel(lang: Language): string {
 		return lang === 'nl' ? 'NL' : 'EN';
 	}
+
+	function isTypingTarget(target: EventTarget | null): boolean {
+		if (!(target instanceof HTMLElement)) return false;
+		const tag = target.tagName;
+		return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+	}
+
+	function isActivatable(target: EventTarget | null): boolean {
+		if (!(target instanceof Element)) return false;
+		return Boolean(target.closest('button, a, [role="button"]'));
+	}
+
+	function onKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Enter' || event.metaKey || event.ctrlKey || event.altKey) return;
+		if (isTypingTarget(event.target) || isActivatable(event.target)) return;
+		event.preventDefault();
+		start();
+	}
 </script>
+
+<svelte:window onkeydown={onKeydown} />
 
 <main class="home">
 	<AppNav />
@@ -110,6 +131,7 @@
 				</div>
 
 				<button type="button" class="start" onclick={start}>Start session</button>
+				<ShortcutHints items={[{ keys: 'Enter', label: 'start session' }]} />
 				<button type="button" class="secondary" onclick={startKeys}>Train keys</button>
 
 				{#if missedCount > 0}
@@ -123,7 +145,7 @@
 				{/if}
 			</div>
 
-			<p class="hint">25 prompts · Esc to hear again · Keys mode trains letters, numbers & symbols</p>
+			<p class="hint">25 prompts · during practice: Esc replay · Space / Enter submit</p>
 
 			{#if recent.length > 0}
 				<section class="recent" aria-labelledby="recent-title">
