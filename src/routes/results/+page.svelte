@@ -117,100 +117,97 @@
 			</p>
 		{/if}
 
-		{#snippet sessionList(rows: StoredSession[], emptyMessage: string)}
-			{#if rows.length === 0}
-				<p class="empty">{emptyMessage}</p>
-			{:else}
-				<ul class="sessions">
-					{#each rows as row (row.id)}
-						<li class="session">
-							<button
-								type="button"
-								class="row"
-								onclick={() => toggle(row.id)}
-								aria-expanded={openId === row.id}
-							>
-								<span class="when">{formatSessionDate(row.completedAt)}</span>
-								<span class="meta">
-									{langLabel(row.language)} · {modeLabel(row.mode)} · {row.accuracy}% · {formatTtt(
-										row.tttMs
-									)}
-								</span>
-							</button>
+		{#snippet sessionList(rows: StoredSession[])}
+			<ul class="sessions">
+				{#each rows as row (row.id)}
+					<li class="session">
+						<button
+							type="button"
+							class="row"
+							onclick={() => toggle(row.id)}
+							aria-expanded={openId === row.id}
+						>
+							<span class="when">{formatSessionDate(row.completedAt)}</span>
+							<span class="meta">
+								{langLabel(row.language)} · {modeLabel(row.mode)} · {row.accuracy}% · {formatTtt(
+									row.tttMs
+								)}
+							</span>
+						</button>
 
-							{#if openId === row.id}
-								<p
-									class="words"
-									aria-label={isKeysSession(row)
-										? 'Keys from this session'
-										: 'Words from this session'}
-								>
-									{#each row.words as item, i (i + item.word)}
-										<span class={['w', item.correct ? 'ok' : 'bad']}>
-											{item.word}{#if isKeysSession(row) && item.tttMs != null}<span class="ttt"
-													>{formatTtt(item.tttMs)}</span
-												>{/if}
-										</span>
-									{/each}
+						{#if openId === row.id}
+							<p
+								class="words"
+								aria-label={isKeysSession(row)
+									? 'Keys from this session'
+									: 'Words from this session'}
+							>
+								{#each row.words as item, i (i + item.word)}
+									<span class={['w', item.correct ? 'ok' : 'bad']}>
+										{item.word}{#if isKeysSession(row) && item.tttMs != null}<span class="ttt"
+												>{formatTtt(item.tttMs)}</span
+											>{/if}
+									</span>
+								{/each}
+							</p>
+							{#if missedWordsFromSession(row).length > 0}
+								<p class="practice-link">
+									<a href={resolve(`/practice?lang=${row.language}&mode=missed`)}
+										>Practice misspellings</a
+									>
 								</p>
-								{#if missedWordsFromSession(row).length > 0}
-									<p class="practice-link">
-										<a href={resolve(`/practice?lang=${row.language}&mode=missed`)}
-											>Practice misspellings</a
-										>
-									</p>
-								{/if}
-								{#if isKeysSession(row)}
-									<p class="practice-link">
-										<a href={resolve(`/practice?lang=${row.language}&mode=slow-keys`)}
-											>Practice slow keys</a
-										>
-										·
-										<a href={resolve(`/practice?lang=${row.language}&mode=keys`)}>Choose keys</a>
-									</p>
-								{/if}
 							{/if}
-						</li>
-					{/each}
-				</ul>
-			{/if}
+							{#if isKeysSession(row)}
+								<p class="practice-link">
+									<a href={resolve(`/practice?lang=${row.language}&mode=slow-keys`)}
+										>Practice slow keys</a
+									>
+									·
+									<a href={resolve(`/practice?lang=${row.language}&mode=keys`)}>Choose keys</a>
+								</p>
+							{/if}
+						{/if}
+					</li>
+				{/each}
+			</ul>
 		{/snippet}
 
 		<div class="columns">
 			<section class="column" aria-labelledby="words-title">
-				<div class="chart-head">
-					<h2 id="words-title">Words</h2>
-					<div class="metrics" role="group" aria-label="Words chart metric">
-						<button
-							type="button"
-							class={['metric', wordMetric === 'ttt' && 'active']}
-							onclick={() => (wordMetric = 'ttt')}
-							aria-pressed={wordMetric === 'ttt'}
-						>
-							TTT
-						</button>
-						<button
-							type="button"
-							class={['metric', wordMetric === 'accuracy' && 'active']}
-							onclick={() => (wordMetric = 'accuracy')}
-							aria-pressed={wordMetric === 'accuracy'}
-						>
-							Accuracy
-						</button>
-						<button
-							type="button"
-							class={['metric', wordMetric === 'cpm' && 'active']}
-							onclick={() => (wordMetric = 'cpm')}
-							aria-pressed={wordMetric === 'cpm'}
-						>
-							CPM
-						</button>
-					</div>
-				</div>
-
 				{#if wordSessions.length === 0}
+					<h2 id="words-title">Words</h2>
 					<p class="empty">No word sessions yet.</p>
 				{:else}
+					<div class="chart-head">
+						<h2 id="words-title">Words</h2>
+						<div class="metrics" role="group" aria-label="Words chart metric">
+							<button
+								type="button"
+								class={['metric', wordMetric === 'ttt' && 'active']}
+								onclick={() => (wordMetric = 'ttt')}
+								aria-pressed={wordMetric === 'ttt'}
+							>
+								TTT
+							</button>
+							<button
+								type="button"
+								class={['metric', wordMetric === 'accuracy' && 'active']}
+								onclick={() => (wordMetric = 'accuracy')}
+								aria-pressed={wordMetric === 'accuracy'}
+							>
+								Accuracy
+							</button>
+							<button
+								type="button"
+								class={['metric', wordMetric === 'cpm' && 'active']}
+								onclick={() => (wordMetric = 'cpm')}
+								aria-pressed={wordMetric === 'cpm'}
+							>
+								CPM
+							</button>
+						</div>
+					</div>
+
 					<ProgressChart
 						points={wordChartPoints}
 						yMin={0}
@@ -218,36 +215,37 @@
 						formatValue={formatWordValue}
 						ariaLabel={`Words ${wordMetric} over recent sessions`}
 					/>
-					{@render sessionList(wordSessions, 'No word sessions yet.')}
+					{@render sessionList(wordSessions)}
 				{/if}
 			</section>
 
 			<section class="column" aria-labelledby="keys-title">
-				<div class="chart-head">
-					<h2 id="keys-title">Keys</h2>
-					<div class="metrics" role="group" aria-label="Keys chart metric">
-						<button
-							type="button"
-							class={['metric', keyMetric === 'ttt' && 'active']}
-							onclick={() => (keyMetric = 'ttt')}
-							aria-pressed={keyMetric === 'ttt'}
-						>
-							TTT
-						</button>
-						<button
-							type="button"
-							class={['metric', keyMetric === 'accuracy' && 'active']}
-							onclick={() => (keyMetric = 'accuracy')}
-							aria-pressed={keyMetric === 'accuracy'}
-						>
-							Accuracy
-						</button>
-					</div>
-				</div>
-
 				{#if keySessions.length === 0}
+					<h2 id="keys-title">Keys</h2>
 					<p class="empty">No key sessions yet.</p>
 				{:else}
+					<div class="chart-head">
+						<h2 id="keys-title">Keys</h2>
+						<div class="metrics" role="group" aria-label="Keys chart metric">
+							<button
+								type="button"
+								class={['metric', keyMetric === 'ttt' && 'active']}
+								onclick={() => (keyMetric = 'ttt')}
+								aria-pressed={keyMetric === 'ttt'}
+							>
+								TTT
+							</button>
+							<button
+								type="button"
+								class={['metric', keyMetric === 'accuracy' && 'active']}
+								onclick={() => (keyMetric = 'accuracy')}
+								aria-pressed={keyMetric === 'accuracy'}
+							>
+								Accuracy
+							</button>
+						</div>
+					</div>
+
 					<ProgressChart
 						points={keyChartPoints}
 						yMin={0}
@@ -255,7 +253,7 @@
 						formatValue={formatKeyValue}
 						ariaLabel={`Keys ${keyMetric} over recent sessions`}
 					/>
-					{@render sessionList(keySessions, 'No key sessions yet.')}
+					{@render sessionList(keySessions)}
 				{/if}
 			</section>
 		</div>
@@ -322,13 +320,21 @@
 	@media (min-width: 52rem) {
 		.columns {
 			grid-template-columns: 1fr 1fr;
-			gap: 2rem;
 			align-items: start;
 		}
 
 		.column + .column {
-			padding-left: 2rem;
-			border-left: 1px solid color-mix(in srgb, var(--ink-soft) 18%, transparent);
+			position: relative;
+		}
+
+		.column + .column::before {
+			content: '';
+			position: absolute;
+			left: -1rem;
+			top: 0;
+			bottom: 0;
+			width: 1px;
+			background: color-mix(in srgb, var(--ink-soft) 18%, transparent);
 		}
 	}
 
