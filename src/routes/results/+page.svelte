@@ -15,42 +15,26 @@
 	import type { Language } from '$lib/words';
 
 	type Metric = 'accuracy' | 'cpm' | 'ttt';
+	type ChartPoint = { x: number; y: number; value: number; label: string };
 
 	let sessions = $state.raw<StoredSession[]>([]);
 	let loading = $state(true);
-	let metric = $state<Metric>('ttt');
+	let wordMetric = $state<Metric>('ttt');
+	let keyMetric = $state<Exclude<Metric, 'cpm'>>('ttt');
 	let openId = $state<number | null>(null);
 	let slowKeyLangs = $state.raw<Language[]>([]);
 
-	/** Oldest → newest for trend reading. */
-	const chronological = $derived([...sessions].reverse());
+	const wordSessions = $derived(sessions.filter((s) => !isKeysSession(s)));
+	const keySessions = $derived(sessions.filter((s) => isKeysSession(s)));
 
-	const chartPoints = $derived(
-		chronological.map((s) => {
-			const value =
-				metric === 'accuracy' ? s.accuracy : metric === 'cpm' ? s.cpm : s.tttMs / 1000;
-			return {
-				x: s.completedAt,
-				y: value,
-				value,
-				label: formatSessionDate(s.completedAt)
-			};
-		})
-	);
+	const wordChartPoints = $derived(chartPointsFor(wordSessions, wordMetric));
+	const keyChartPoints = $derived(chartPointsFor(keySessions, keyMetric));
 
-	const yMax = $derived.by(() => {
-		if (metric === 'accuracy') return 100;
-		const peak = Math.max(...chartPoints.map((p) => p.value), 1);
-		return Math.ceil(peak * 1.15);
-	});
+	const wordYMax = $derived(yMaxFor(wordMetric, wordChartPoints));
+	const keyYMax = $derived(yMaxFor(keyMetric, keyChartPoints));
 
-	const formatValue = $derived(
-		metric === 'accuracy'
-			? (v: number) => `${Math.round(v)}%`
-			: metric === 'cpm'
-				? (v: number) => `${Math.round(v)}`
-				: (v: number) => `${v.toFixed(1)}s`
-	);
+	const formatWordValue = $derived(formatValueFor(wordMetric));
+	const formatKeyValue = $derived(formatValueFor(keyMetric));
 
 	onMount(() => {
 		void listSessions(100)
@@ -71,6 +55,31 @@
 				loading = false;
 			});
 	});
+
+	function chartPointsFor(rows: StoredSession[], metric: Metric): ChartPoint[] {
+		return [...rows].reverse().map((s) => {
+			const value =
+				metric === 'accuracy' ? s.accuracy : metric === 'cpm' ? s.cpm : s.tttMs / 1000;
+			return {
+				x: s.completedAt,
+				y: value,
+				value,
+				label: formatSessionDate(s.completedAt)
+			};
+		});
+	}
+
+	function yMaxFor(metric: Metric, points: ChartPoint[]): number {
+		if (metric === 'accuracy') return 100;
+		const peak = Math.max(...points.map((p) => p.value), 1);
+		return Math.ceil(peak * 1.15);
+	}
+
+	function formatValueFor(metric: Metric): (v: number) => string {
+		if (metric === 'accuracy') return (v) => `${Math.round(v)}%`;
+		if (metric === 'cpm') return (v) => `${Math.round(v)}`;
+		return (v) => `${v.toFixed(1)}s`;
+	}
 
 	function langLabel(lang: Language): string {
 		return lang === 'nl' ? 'NL' : 'EN';
@@ -108,101 +117,148 @@
 			</p>
 		{/if}
 
-		<section class="chart-block" aria-labelledby="trend-title">
-			<div class="chart-head">
-				<h2 id="trend-title">Trend</h2>
-				<div class="metrics" role="group" aria-label="Chart metric">
-					<button
-						type="button"
-						class={['metric', metric === 'ttt' && 'active']}
-						onclick={() => (metric = 'ttt')}
-						aria-pressed={metric === 'ttt'}
-					>
-						TTT
-					</button>
-					<button
-						type="button"
-						class={['metric', metric === 'accuracy' && 'active']}
-						onclick={() => (metric = 'accuracy')}
-						aria-pressed={metric === 'accuracy'}
-					>
-						Accuracy
-					</button>
-					<button
-						type="button"
-						class={['metric', metric === 'cpm' && 'active']}
-						onclick={() => (metric = 'cpm')}
-						aria-pressed={metric === 'cpm'}
-					>
-						CPM
-					</button>
-				</div>
-			</div>
+		{#snippet sessionList(rows: StoredSession[], emptyMessage: string)}
+			{#if rows.length === 0}
+				<p class="empty">{emptyMessage}</p>
+			{:else}
+				<ul class="sessions">
+					{#each rows as row (row.id)}
+						<li class="session">
+							<button
+								type="button"
+								class="row"
+								onclick={() => toggle(row.id)}
+								aria-expanded={openId === row.id}
+							>
+								<span class="when">{formatSessionDate(row.completedAt)}</span>
+								<span class="meta">
+									{langLabel(row.language)} · {modeLabel(row.mode)} · {row.accuracy}% · {formatTtt(
+										row.tttMs
+									)}
+								</span>
+							</button>
 
-			<ProgressChart
-				points={chartPoints}
-				yMin={0}
-				{yMax}
-				{formatValue}
-				ariaLabel={`${metric} over recent sessions`}
-			/>
-		</section>
+							{#if openId === row.id}
+								<p
+									class="words"
+									aria-label={isKeysSession(row)
+										? 'Keys from this session'
+										: 'Words from this session'}
+								>
+									{#each row.words as item, i (i + item.word)}
+										<span class={['w', item.correct ? 'ok' : 'bad']}>
+											{item.word}{#if isKeysSession(row) && item.tttMs != null}<span class="ttt"
+													>{formatTtt(item.tttMs)}</span
+												>{/if}
+										</span>
+									{/each}
+								</p>
+								{#if missedWordsFromSession(row).length > 0}
+									<p class="practice-link">
+										<a href={resolve(`/practice?lang=${row.language}&mode=missed`)}
+											>Practice misspellings</a
+										>
+									</p>
+								{/if}
+								{#if isKeysSession(row)}
+									<p class="practice-link">
+										<a href={resolve(`/practice?lang=${row.language}&mode=slow-keys`)}
+											>Practice slow keys</a
+										>
+										·
+										<a href={resolve(`/practice?lang=${row.language}&mode=keys`)}>Choose keys</a>
+									</p>
+								{/if}
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		{/snippet}
 
-		<section class="list-block" aria-labelledby="list-title">
-			<h2 id="list-title">All sessions</h2>
-			<ul class="sessions">
-				{#each sessions as row (row.id)}
-					<li class="session">
+		<div class="columns">
+			<section class="column" aria-labelledby="words-title">
+				<div class="chart-head">
+					<h2 id="words-title">Words</h2>
+					<div class="metrics" role="group" aria-label="Words chart metric">
 						<button
 							type="button"
-							class="row"
-							onclick={() => toggle(row.id)}
-							aria-expanded={openId === row.id}
+							class={['metric', wordMetric === 'ttt' && 'active']}
+							onclick={() => (wordMetric = 'ttt')}
+							aria-pressed={wordMetric === 'ttt'}
 						>
-							<span class="when">{formatSessionDate(row.completedAt)}</span>
-							<span class="meta">
-								{langLabel(row.language)} · {modeLabel(row.mode)} · {row.accuracy}% · {formatTtt(
-									row.tttMs
-								)}
-							</span>
+							TTT
 						</button>
+						<button
+							type="button"
+							class={['metric', wordMetric === 'accuracy' && 'active']}
+							onclick={() => (wordMetric = 'accuracy')}
+							aria-pressed={wordMetric === 'accuracy'}
+						>
+							Accuracy
+						</button>
+						<button
+							type="button"
+							class={['metric', wordMetric === 'cpm' && 'active']}
+							onclick={() => (wordMetric = 'cpm')}
+							aria-pressed={wordMetric === 'cpm'}
+						>
+							CPM
+						</button>
+					</div>
+				</div>
 
-						{#if openId === row.id}
-							<p
-								class="words"
-								aria-label={isKeysSession(row)
-									? 'Keys from this session'
-									: 'Words from this session'}
-							>
-								{#each row.words as item, i (i + item.word)}
-									<span class={['w', item.correct ? 'ok' : 'bad']}>
-										{item.word}{#if isKeysSession(row) && item.tttMs != null}<span class="ttt"
-												>{formatTtt(item.tttMs)}</span
-											>{/if}
-									</span>
-								{/each}
-							</p>
-							{#if missedWordsFromSession(row).length > 0}
-								<p class="practice-link">
-									<a href={resolve(`/practice?lang=${row.language}&mode=missed`)}
-										>Practice misspellings</a
-									>
-								</p>
-							{/if}
-							{#if isKeysSession(row)}
-								<p class="practice-link">
-									<a href={resolve(`/practice?lang=${row.language}&mode=slow-keys`)}
-										>Practice slow keys</a
-									>
-									·
-									<a href={resolve(`/practice?lang=${row.language}&mode=keys`)}>Choose keys</a>
-								</p>
-							{/if}
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		</section>
+				{#if wordSessions.length === 0}
+					<p class="empty">No word sessions yet.</p>
+				{:else}
+					<ProgressChart
+						points={wordChartPoints}
+						yMin={0}
+						yMax={wordYMax}
+						formatValue={formatWordValue}
+						ariaLabel={`Words ${wordMetric} over recent sessions`}
+					/>
+					{@render sessionList(wordSessions, 'No word sessions yet.')}
+				{/if}
+			</section>
+
+			<section class="column" aria-labelledby="keys-title">
+				<div class="chart-head">
+					<h2 id="keys-title">Keys</h2>
+					<div class="metrics" role="group" aria-label="Keys chart metric">
+						<button
+							type="button"
+							class={['metric', keyMetric === 'ttt' && 'active']}
+							onclick={() => (keyMetric = 'ttt')}
+							aria-pressed={keyMetric === 'ttt'}
+						>
+							TTT
+						</button>
+						<button
+							type="button"
+							class={['metric', keyMetric === 'accuracy' && 'active']}
+							onclick={() => (keyMetric = 'accuracy')}
+							aria-pressed={keyMetric === 'accuracy'}
+						>
+							Accuracy
+						</button>
+					</div>
+				</div>
+
+				{#if keySessions.length === 0}
+					<p class="empty">No key sessions yet.</p>
+				{:else}
+					<ProgressChart
+						points={keyChartPoints}
+						yMin={0}
+						yMax={keyYMax}
+						formatValue={formatKeyValue}
+						ariaLabel={`Keys ${keyMetric} over recent sessions`}
+					/>
+					{@render sessionList(keySessions, 'No key sessions yet.')}
+				{/if}
+			</section>
+		</div>
 	{/if}
 </main>
 
@@ -210,7 +266,7 @@
 	.results {
 		min-height: 100dvh;
 		padding: clamp(1.25rem, 4vw, 2.5rem);
-		max-width: 44rem;
+		max-width: 60rem;
 		margin: 0 auto;
 	}
 
@@ -252,9 +308,28 @@
 		color: var(--ink-soft);
 	}
 
-	.chart-block,
-	.list-block {
-		margin-bottom: 2.5rem;
+	.empty {
+		margin: 0.85rem 0 0;
+		color: var(--ink-soft);
+		font-size: 0.95rem;
+	}
+
+	.columns {
+		display: grid;
+		gap: 2rem;
+	}
+
+	@media (min-width: 52rem) {
+		.columns {
+			grid-template-columns: 1fr 1fr;
+			gap: 2rem;
+			align-items: start;
+		}
+
+		.column + .column {
+			padding-left: 2rem;
+			border-left: 1px solid color-mix(in srgb, var(--ink-soft) 18%, transparent);
+		}
 	}
 
 	.chart-head {
