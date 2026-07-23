@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import ProgressChart from '$lib/components/ProgressChart.svelte';
 	import {
@@ -72,8 +73,8 @@
 
 <main class="results">
 	<header class="top">
-		<a class="brand" href="/">TypeByEar</a>
-		<a class="back" href="/">Home</a>
+		<a class="brand" href={resolve('/')}>TypeByEar</a>
+		<a class="back" href={resolve('/')}>Home</a>
 	</header>
 
 	<h1>Results</h1>
@@ -83,7 +84,7 @@
 		<p class="status">Loading…</p>
 	{:else if sessions.length === 0}
 		<p class="status">No sessions yet. Finish a practice run to see results here.</p>
-		<p><a href="/">Start practicing</a></p>
+		<p><a href={resolve('/')}>Start practicing</a></p>
 	{:else}
 		<section class="chart-block" aria-labelledby="trend-title">
 			<div class="chart-head">
@@ -150,7 +151,9 @@
 							</p>
 							{#if missedWordsFromSession(row).length > 0}
 								<p class="practice-missed">
-									<a href={`/practice?lang=${row.language}&mode=missed`}>Practice misspellings</a>
+									<a href={resolve(`/practice?lang=${row.language}&mode=missed`)}
+										>Practice misspellings</a
+									>
 								</p>
 							{/if}
 						{/if}
