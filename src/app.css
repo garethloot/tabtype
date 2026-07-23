@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap');
+
+:root {
+	--ink: #1a2a32;
+	--ink-soft: #3d5560;
+	--paper: #e8f1f0;
+	--mist: #c5ddd8;
+	--teal: #1f6f6a;
+	--teal-deep: #0f4a47;
+	--correct: #1f8a5b;
+	--incorrect: #c23b3b;
+	--reveal: #a33a3a;
+	--surface: rgba(255, 255, 255, 0.45);
+	--font-display: 'Fraunces', Georgia, serif;
+	--font-body: 'Source Sans 3', system-ui, sans-serif;
+	--font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+}
+
+body {
+	font-family: var(--font-body);
+	color: var(--ink);
+	background:
+		radial-gradient(ellipse 90% 70% at 10% 0%, #b8d4ce 0%, transparent 55%),
+		radial-gradient(ellipse 80% 60% at 100% 100%, #9ebfc8 0%, transparent 50%),
+		linear-gradient(160deg, #dceae7 0%, #e8f1f0 40%, #d2e0e4 100%);
+	background-attachment: fixed;
+}
+
+a {
+	color: var(--teal-deep);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.2em;
+}
+
+button {
+	font: inherit;
+	cursor: pointer;
+}
+
+:focus-visible {
+	outline: 2px solid var(--teal);
+	outline-offset: 3px;
+}
