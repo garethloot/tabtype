@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import AppNav from '$lib/components/AppNav.svelte';
+	import BrandLockup from '$lib/components/BrandLockup.svelte';
 	import ShortcutHints from '$lib/components/ShortcutHints.svelte';
 	import {
 		formatSessionDate,
@@ -105,7 +106,7 @@
 <main class="home">
 	<AppNav showBrand={false} />
 
-	<p class="brand">TypeByEar</p>
+	<BrandLockup size="hero" link={false} />
 	<h1>Hear it. Type it.</h1>
 	<p class="lede">
 		Words stay hidden. The app speaks one; you type from memory. Letter colors show how you’re
@@ -256,17 +257,6 @@
 		padding: clamp(1.5rem, 5vw, 3.5rem);
 		max-width: 60rem;
 		margin: 0 auto;
-	}
-
-	.brand {
-		font-family: var(--font-display);
-		font-size: clamp(2.75rem, 8vw, 4.5rem);
-		font-weight: 700;
-		letter-spacing: -0.03em;
-		line-height: 1;
-		margin: 0 0 1.25rem;
-		color: var(--teal-deep);
-		animation: rise 0.7s ease-out both;
 	}
 
 	h1 {

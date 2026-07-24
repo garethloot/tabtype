@@ -5,6 +5,7 @@
 	import { onMount, tick } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import AppNav from '$lib/components/AppNav.svelte';
+	import BrandLockup from '$lib/components/BrandLockup.svelte';
 	import KeyPicker from '$lib/components/KeyPicker.svelte';
 	import ShortcutHints from '$lib/components/ShortcutHints.svelte';
 	import { rankMissedWords, rankSlowKeys } from '$lib/history';
@@ -280,7 +281,7 @@
 		<AppNav onBrandClick={() => session.reset()} />
 	{:else}
 		<header class="top">
-			<a class="brand" href={resolve('/')} tabindex="-1" onclick={() => session.reset()}>TypeByEar</a>
+			<BrandLockup onclick={() => session.reset()} />
 			<p class="progress" aria-live="polite">
 				{#if modeTag(session.mode)}
 					<span class="mode-tag">{modeTag(session.mode)}</span>
@@ -300,7 +301,7 @@
 		{@const s = session.summary}
 		{@const keysMode = s.mode === 'keys' || s.mode === 'slow-keys'}
 		<section class="summary" aria-labelledby="summary-title">
-			<p class="brand-echo">TypeByEar</p>
+			<BrandLockup size="echo" link={false} />
 			<h1 id="summary-title">Session complete</h1>
 			{#if modeNote(s.mode)}
 				<p class="mode-note">{modeNote(s.mode)}</p>
@@ -437,14 +438,6 @@
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 1rem;
-	}
-
-	.brand {
-		font-family: var(--font-display);
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--teal-deep);
-		text-decoration: none;
 	}
 
 	.progress {
@@ -635,14 +628,6 @@
 		max-width: 28rem;
 		margin: 0 auto;
 		animation: rise 0.55s ease-out;
-	}
-
-	.brand-echo {
-		font-family: var(--font-display);
-		font-size: 2rem;
-		font-weight: 700;
-		color: var(--teal-deep);
-		margin: 0 0 0.5rem;
 	}
 
 	.summary h1 {

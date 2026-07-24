@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import BrandLockup from '$lib/components/BrandLockup.svelte';
 
 	type Props = {
 		/** Optional brand click handler (e.g. reset practice session). */
 		onBrandClick?: () => void;
-		/** Whether to render the "TypeByEar" brand link. Defaults to true. */
+		/** Whether to render the brand lockup. Defaults to true. */
 		showBrand?: boolean;
 	};
 
@@ -21,7 +22,7 @@
 
 <nav class={['nav', !showBrand && 'nav-links-only']} aria-label="Main">
 	{#if showBrand}
-		<a class="brand" href={resolve('/')} onclick={onBrandClick}>TypeByEar</a>
+		<BrandLockup onclick={onBrandClick} />
 	{/if}
 	<div class="links">
 		<a
@@ -44,7 +45,7 @@
 <style>
 	.nav {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
 		gap: 0.75rem;
 		margin-bottom: 1.75rem;
@@ -54,19 +55,6 @@
 
 	.nav-links-only {
 		justify-content: flex-end;
-	}
-
-	.brand {
-		font-family: var(--font-display);
-		font-size: 1.35rem;
-		font-weight: 700;
-		color: var(--teal-deep);
-		text-decoration: none;
-		flex: 1 1 auto;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	.links {
@@ -94,10 +82,6 @@
 	}
 
 	@media (max-width: 30rem) {
-		.brand {
-			font-size: 1.15rem;
-		}
-
 		.links {
 			gap: 0.65rem;
 		}
